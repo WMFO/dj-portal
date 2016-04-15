@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DJ Summary</title>
+    {% load staticfiles %}
+    <link href="{%  static "dj_summary/main.css" %}" rel="stylesheet" type="text/css">
+</head>
+<body>
+<h1>DJ Summary</h1>
+<p>Hello, {{ user.first_name }}!</p>
+{% if checklist %}
+<h2>Next Semester's Checklist</h2>
+    <p>Checklist for {{ next_semester.name }} starting {{ next_semester.start_date }}</p>
+    <ul>
+    <li>({{ checklist.volunteering }}) Complete Minimum 5 Volunteer Hours</li>
+    <li>({{ checklist.agreement }}) Submit DJ Agreement</li>
+    <li>({{ checklist.schedule_requested }}) Fill out Show Schedule</li>
+    <li>({{ checklist.scheduled }}) Show is Scheduled for Next Semester</li>
+    </ul>
+{% endif %}
+    {% if volunteer_entries %}
+        <h2>Volunteer Hours</h2>
+        <h3>{{ current_semester.name }}</h3>
+    <ul>
+        {%  for volunteer_entry in volunteer_entries %}
+            <li>{{ volunteer_entry.volunteer_date }}: {{ volunteer_entry.number_of_hours }} hours for {{ volunteer_entry.subject }}</li>
+        {%  endfor %}
+    </ul>
+    {%  else %}
+        <p>No volunteer entries.</p>
+    {% endif %}
+    <p>Volunteering This Semester: {{ volunteering_this_semester.total }}
+        ({{ volunteering_this_semester.regular }} regular hours and
+        {{ volunteering_this_semester.subbing }} subbing hours)</p>
+    <p>Total WMFO Volunteer Hours: {{ total_volunteering }}</p>
+{% if shows %}
+    <h2>Your Show</h2>
+    {%  for show in shows %}
+        <p>{{ show.name }} at {{ show.timeslot.formatted }}</p>
+    {% endfor %}
+{% else %}
+    <h2>No Shows Scheduled</h2>
+{% endif %}
+</body>
+</html>

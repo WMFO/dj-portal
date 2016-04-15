@@ -1,0 +1,38 @@
+body {
+    font-family: Arial, sans-serif;
+}
+
+
+
+.testStyle {
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    font-weight: bold;
+    color: #FF0000;
+}
+
+table, th, td {
+    border: 1px solid black;
+    border-collapse: collapse;
+    padding: 5px;
+}
+
+td {
+    cursor: pointer;
+}
+
+.red_text {
+    color: red;
+    cursor: url("/static/dj_summary/x_cursor.png"), default;
+}
+
+.red {
+    background-color: red;
+    cursor: url("/static/dj_summary/x_cursor.png"), default;
+}
+.blue {
+    background-color: blue;
+}
+.grey {
+    background-color: #888888;
+    cursor: not-allowed;
+}

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Show Schedule Form</title>
+</head>
+<body>
+<div ng-controller="MyCtrl">
+<h1>
+Schedule your Show
+</h1>
+<p>
+Use the following form to schedule your show.
+</p>
+<p>
+<label for="length">Show Length (hours): </label>
+  <select id="length" ng-model="input.length">
+    <option ng-repeat="n in [1,2,3]">{{ n }}</option>
+  </select>
+
+</p>
+
+  <table>
+        <tr><th ng-repeat="weekday in weekdays">
+          {{weekday}}
+        </th></tr>
+      <tr ng-repeat="hour in hours">
+
+         <td ng-class="{'red':whatColor($index,$parent.$index) == 1,
+          'blue':whatColor($index,$parent.$index) == 2,
+          'grey':whatColor($index,$parent.$index) == 2}"
+             ng-repeat="day in days"
+             ng-click="cellClick($index,$parent.$index)">
+             {{hour}}:00
+          </td>
+      </tr>
+
+    </table>
+    <p>
+    <a ng-click="clearSelections()">Clear Selections</a>
+    </p>
+    <ol>
+      <li ng-repeat="selection in selections">{{ selection.weekday }} {{ selection.hour }}-{{ calculateEnd(selection.hour) }}:00
+      <a ng-click="deleteSelection($index)">(x)</a>
+      </li>
+    </ol>
+</div>
+
+</body>
+</html>

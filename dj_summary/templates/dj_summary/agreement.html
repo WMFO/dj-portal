@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DJ Agreement</title>
+    {% load staticfiles %}
+    <link href="{%  static "dj_summary/main.css" %}" rel="stylesheet" type="text/css">
+</head>
+<body>
+<h1>WMFO DJ Agreement for {{ semester }}</h1>
+<pre>
+By signing here, I agree to the following:
+
+1. Rules: I have read the WMFO Constitution and the DJ Handbook. I understand that these documents and
+this contract represent the binding rules and policies of WMFO.
+
+2. Property: I will not attempt to fix, modify, or remove any equipment or property at WMFO without written permission from the WMFO
+Executive Board.
+
+3. Alcohol/Drugs: WMFO has a zero tolerance drugs and alcohol policy. I understand that if I or my guests are found to be in the
+possession of drugs and/or alcohol and/or under the influence of drugs and/or alcohol while in the station, I will be subject to
+immediate dismissal.
+
+4. Discrimination and Sexual Harassment: I understand that violations of Tufts University’s official non-discrimination and/or sexual
+harassment policies will not be tolerated and may result in disciplinary action including suspension or dismissal, as well as
+criminal prosecution.
+
+5. Shows: If applying for a show, I have fully completed the attached scheduling form. I understand that I might not keep my current time
+slot or get a show at all, and that the final decision lies entirely with the Programming Director and Executive Board, who are
+responsible for creating the semester program schedule. I understand that the Executive Board may need to cancel my show at various
+times during the season to accommodate special events.
+
+6. Profanity: I am aware of and will abide by WMFO's Profanity Policy, available at:
+https://wiki.wmfo.org/Staff_Info/General_Policies/Profanity%2C_Indecency%2C_and_Obscenity
+
+7. Spinitron: I have created a Spinitron account and recognize that I must log all material I play on air at the time it is played.
+
+8. Subs: If assigned a show time, I understand that I must attend every show on time and for its full duration, or find a substitute by sending
+an email to wmfo-sublist@googlegroups.com. I understand that there is a maximum of three substitutions allowed per season. If
+something unexpected happens, or if I will be otherwise absent for more than three shows and need more substitutions, I will contact the
+Programming Director as soon as possible.
+
+9. Volunteering: All regular DJs are required to complete at least five hours of volunteering per semester, no more than two of which may
+count from subbing. DJs without regular shows (subs) must complete at least three non-subbing volunteer hours per semester to retain
+station access. I understand that failure to complete volunteer hours will affect my station access rights and show time(s) in the future.
+
+10. Access: The Programming Director is responsible for the activation of my card access each semester. After activation, if my card does
+not work, it is my responsibility to email the Programming Director at pd@wmfo.org as soon as possible.
+
+11. Newgroups: I have joined and will regularly read the following two Google groups:
+WMFO-STAFF: http://groups.google.com/group/wmfo-staff
+WMFO-SUBLIST: http://groups.google.com/group/wmfo-sublist
+For more info and to view optional groups, I will visit: https://wiki.wmfo.org/Staff_Info/Staff_Newsgroups
+
+12. Violations: If I violate any guidelines set forth above or modified by subsequent official WMFO Executive Board e-mails, I understand
+that my behavior is punishable at the discretion of the WMFO Executive Board.
+</pre>
+
+{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+
+<form action="{% url 'agreement' %}" method="post">
+{% csrf_token %}
+<label for="signature">Signature (full name): </label><input type="text" name="signature" id="signature" />
+<input type="submit" value="Sign Agreement" />
+</form>
+</body>
+</html>

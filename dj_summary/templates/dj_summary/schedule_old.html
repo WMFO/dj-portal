@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Schedule</title>
+</head>
+<body>
+<h1>Schedule Show for {{ semester }}</h1>
+<p>Scheduling {{ show.name }} last scheduled in {{ last_semester }}</p>
+<p>Our records indicate that you have completed a DJ Agreement for {{ semester }}.</p>
+<p>If you do not wish to schedule a show, no further action is necessary and you may <a href="/">return to the homepage</a>.</p>
+<p>Use the following form to request a show time for the {{ semester }} season.</p>
+<form name="schedule_form" action="" method="post">
+{% csrf_token %}
+<p><label for="length">Length of Show (hours): </label>
+<select name="length" id="length">
+    {% for l in show_lengths %}
+        <option value="{{ l }}">{{ l }}</option>
+    {% endfor %}
+</select></p>
+    {%  for i in number_options %}
+        <p><label for="day{{ i }}">Choice {{ i }}: </label>
+        <select name="day{{ i }}">
+            {% for day in weekdays %}
+                <option value="{{ day }}">{{ day }}</option>
+            {% endfor %}
+        </select>
+        <select name="time{{ i }}">
+            {% for time in times %}
+                <option value="{{ time }}">{{ time }}:00</option>
+            {% endfor %}
+        </select>
+        </p>
+    {% endfor %}
+<p>Please remember that 0:00 on Monday is "Sunday night."</p>
+<p><input type="submit" name="show_request" value="Request a Show"></p>
+<p></p><input type="submit" name="no_show" value="Do Not Schedule"></p>
+</form>
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="scheduleApp">
+<head>
+    <meta charset="UTF-8">
+    <title>Schedule</title>
+    {% load staticfiles %}
+    <script src="{% static "dj_summary/angular.js" %}" type="text/javascript"></script>
+    <script src="{% static "dj_summary/schedule.js" %}" type="text/javascript"></script>
+    <link href="{%  static "dj_summary/main.css" %}" rel="stylesheet" type="text/css">
+
+</head>
+<body ng-controller="ScheduleCtrl">
+<h1>Schedule Show for {{ semester }}</h1>
+<p>Scheduling {{ show.name }} last scheduled in {{ last_semester }}</p>
+<p>Our records indicate that you have completed a DJ Agreement for {{ semester }}.</p>
+<p>If you do not wish to schedule a show, no further action is necessary and you may <a href="/">return to the homepage</a>.</p>
+<p>Use the following form to request a show time for the {{ semester }} season.</p>
+
+{% verbatim %}
+
+<p>
+<label for="length">Show Length (hours): </label>
+  <select id="length" ng-model="length" ng-options=" length for length in lengths">
+  </select>
+
+</p>
+
+  <table>
+        <tr><th ng-repeat="weekday in weekdays">
+          {{weekday}}
+        </th></tr>
+      <tr ng-repeat="hour in hours">
+
+         <td ng-class="{'red':whatColor($index,$parent.$index) == 1,
+          'blue':whatColor($index,$parent.$index) == 2,
+          'grey':whatColor($index,$parent.$index) == 3}"
+             ng-repeat="day in days"
+             ng-click="cellClick($index,$parent.$index)">
+             {{hour}}:00
+          </td>
+      </tr>
+
+    </table>
+    <p>
+    <input type="submit" ng-click="clearSelections()" value="Clear Selections"/>
+    </p>
+    <ol>
+      <li ng-repeat="selection in selections">{{ selection.weekday }} {{ selection.hour }}-{{ calculateEnd(selection.hour) }}:00
+      <a class="red_text" ng-click="deleteSelection($index)">(x)</a>
+      </li>
+    </ol>
+    <p><label for="alternating">Alternating Show (every other week): </label><input id="alternating" type="checkbox" ng-model="alternating"></p>
+    <p><input type="submit" value="Submit Scheduling Request" ng-click="submit()"></p>
+{% endverbatim %}
+
+<p>Please remember that 0:00 on Monday is "Sunday night."</p>
+</body>
+</html>
