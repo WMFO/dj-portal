@@ -11,7 +11,7 @@ var hours = Array.apply(null, Array(24)).map(function (_, i) {return i;});
 var days = Array.apply(null, Array(7)).map(function (_, i) {return i;});
 var weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-var scheduleApp = angular.module('scheduleApp',[]).controller('ScheduleCtrl',[ '$scope', '$http' , '$window', function ($scope, $http, $window) {
+var scheduleApp = angular.module('scheduleApp',[]).controller('ScheduleCtrl',[ '$scope', '$http' , '$window', function ($scope, $http, $window  ) {
     $scope.hours = hours;
     $scope.days = days;
     $scope.weekdays = weekdays;

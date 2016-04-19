@@ -1,11 +1,13 @@
 from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import F, Sum
-from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse, HttpResponseForbidden
 from django.shortcuts import render
 import json
 from dj_summary import utilities
-from .models import Agreement, Timeslot
+from .models import Agreement, Timeslot, Profile, SpinitronProfile
+from django.contrib.auth.models import User
 
 
 @login_required
@@ -129,7 +131,7 @@ def schedule_api(request):
                                                slot=slot['cell'])
             timeslot.save()
         return HttpResponse("Success")
-    else:
+    else:   
 
         current_shows = Timeslot.objects.filter(accepted=True,semester_id=agreement_semester.id)
         slots = []
@@ -156,3 +158,89 @@ def schedule_api(request):
                              'scheduled_slots':slots,
                              'user_slots':user_slots_json,
                              })
+
+def register(request,key=''):
+    errors = []
+    try:
+        profile = Profile.objects.get(key=key)
+    except ObjectDoesNotExist:
+        return HttpResponseForbidden("Invalid registration key")
+
+    if (request.method == 'POST'):
+        try:
+            spinitron = SpinitronProfile.objects.get(spinitron_email=request.POST['spinitron_email'])
+            profile.user.first_name = request.POST['first_name']
+            profile.middle_name = request.POST['middle_name']
+            profile.user.last_name = request.POST['last_name']
+            profile.nick_name = request.POST['nick_name']
+            profile.phone = request.POST['phone']
+            profile.seniority_offset = request.POST['seniority_offset']
+            profile.nick_name = request.POST['nick_name']
+            profile.nick_name = request.POST['nick_name']
+            profile.nick_name = request.POST['nick_name']
+
+        except ObjectDoesNotExist as e:
+            errors.append(e.args)
+        #return HttpResponse("Nothing")
+
+    try:
+        spinitron = SpinitronProfile.objects.get(spinitron_email=profile.user.email)
+    except ObjectDoesNotExist:
+        spinitron = False
+
+
+
+    data = {
+        'first_name' : profile.user.first_name,
+        'input_list' : [
+            {'name' :'first_name',
+            'data': profile.user.first_name,
+             'friendly_name' : "First Name",},
+
+            {'name': 'middle_name',
+             'data': profile.middle_name,
+             'friendly_name': "Middle Name",},
+
+            {'name': 'last_name',
+             'data': profile.user.last_name,
+             'friendly_name': "Last Name",},
+
+            {'name': 'nick_name',
+             'data': profile.nick_name,
+             'friendly_name': "Nickname",},
+
+            {'name': 'student_id',
+             'data': profile.student_id,
+             'friendly_name': "Student ID Number",
+             'help':"Community members enter n/a"},
+
+            {'name': 'email',
+             'data': profile.user.email,
+             'friendly_name': "Email Address",
+             'help':"Email address you will use to log in to the DJ Portal."},
+
+            {'name': 'date_joined',
+             'data': profile.date_joined,
+             'friendly_name': "Date Joined",
+             'help': 'The (approximate) date you joined WMFO',},
+
+            {'name': 'phone',
+             'data': profile.phone,
+             'friendly_name': "Phone Number",},
+
+            {'name': 'number_of_semesters',
+             'data': profile.seniority_offset,
+             'friendly_name': "Number of WMFO Seasons",},
+        ],
+        'read_only' : [
+            {'name':'Relationship',
+             'data':profile.get_relationship_display(),},
+            {'name':'Executive Board',
+             'data':profile.exec,},
+            {'name':'Access Level',
+             'data':profile.get_access_display(),},
+        ],
+        'spinitron' : spinitron,
+        'errors' : errors,
+    }
+    return render(request,'dj_summary/register.html', data)

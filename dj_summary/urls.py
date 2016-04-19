@@ -7,4 +7,5 @@ urlpatterns = [
     url(r'^agreement$', views.agreement, name='agreement'),
     url(r'^schedule$', views.schedule, name='schedule'),
     url(r'^scheduleapi$', views.schedule_api, name='schedule_api'),
+    url(r'^register/(?P<key>.*)$', views.register,name='register'),
 ]

@@ -3,6 +3,7 @@ from datetime import datetime
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import F, Sum
+from django.utils.timezone import now
 
 
 def current_semester():
@@ -82,7 +83,7 @@ class Timeslot(models.Model):
         return qualifier + str(self.WEEKDAY_OPTIONS[self.weekday_int]) + ' ' + str(self.hour) + '-' + str(self.end_hour) + ':00 @ ' + self.semester.name
 
 class Agreement(models.Model):
-    signature_date = models.DateTimeField(default=datetime.now())
+    signature_date = models.DateTimeField(default=now)
     signature = models.CharField(max_length=100)
     user = models.ForeignKey(User)
     semester = models.ForeignKey(Semester)
@@ -134,18 +135,20 @@ class Profile(models.Model):
         ('A','All'),
     )
     nick_name = models.CharField(max_length=75)
+    key = models.CharField(max_length=50)
     middle_name = models.CharField(max_length=75)
-    semester_joined = models.ForeignKey(Semester)
+    semester_joined = models.ForeignKey(Semester,null=True)
     seniority_offset = models.IntegerField()
     phone = models.CharField(max_length=15)
     student_id = models.CharField(max_length=15)
     access = models.CharField(max_length=1,choices=ACCESSES)
-    exec = models.BooleanField()
-    active = models.BooleanField()
-    unsubscribe = models.BooleanField()
-    sub = models.BooleanField()
+    exec = models.BooleanField(default=False)
+    active = models.BooleanField(default=False)
+    unsubscribe = models.BooleanField(default=False)
+    sub = models.BooleanField(default=False)
     user = models.OneToOneField(User)
     relationship = models.CharField(max_length=1,choices=RELATIONSHIPS)
+    date_joined = models.DateField(default=now)
     spinitron = models.OneToOneField(SpinitronProfile,null=True)
 
     @property
