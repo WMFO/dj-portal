@@ -7,7 +7,9 @@ from django.shortcuts import render
 import json
 from dj_summary import utilities
 from .models import Agreement, Timeslot, Profile, SpinitronProfile
-from django.contrib.auth.models import User
+
+
+from .forms import RegisterForm
 
 
 @login_required
@@ -131,7 +133,7 @@ def schedule_api(request):
                                                slot=slot['cell'])
             timeslot.save()
         return HttpResponse("Success")
-    else:   
+    else:
 
         current_shows = Timeslot.objects.filter(accepted=True,semester_id=agreement_semester.id)
         slots = []
@@ -167,17 +169,35 @@ def register(request,key=''):
         return HttpResponseForbidden("Invalid registration key")
 
     if (request.method == 'POST'):
+        form = RegisterForm(request.POST)
         try:
-            spinitron = SpinitronProfile.objects.get(spinitron_email=request.POST['spinitron_email'])
-            profile.user.first_name = request.POST['first_name']
-            profile.middle_name = request.POST['middle_name']
-            profile.user.last_name = request.POST['last_name']
-            profile.nick_name = request.POST['nick_name']
-            profile.phone = request.POST['phone']
-            profile.seniority_offset = request.POST['seniority_offset']
-            profile.nick_name = request.POST['nick_name']
-            profile.nick_name = request.POST['nick_name']
-            profile.nick_name = request.POST['nick_name']
+            if form.is_valid():
+                data = form.cleaned_data
+                if data['password'] != data['confirm_password']:
+                    errors.append("Passwords must match")
+                if len(data['password']) < 12:
+                    errors.append("Password must be at least 12 characters long")
+
+                spinitron = SpinitronProfile.objects.get(spinitron_email=request.POST['spinitron_email'])
+
+                if not spinitron:
+                    errors.append("Spinitron email does not match any known accounts")
+
+                profile.user.first_name = data['first_name']
+                profile.middle_name = data['middle_name']
+                profile.user.last_name = data['last_name']
+                profile.nick_name = data['nick_name']
+                profile.student_id = data['student_id']
+                profile.user.username = data['email']
+                profile.user.email = data['email']
+                profile.date_joined = data['date_joined']
+                profile.phone = data['phone']
+                profile.seniority_offset = data['number_of_semesters']
+                if not errors:
+                    profile.user.set_password(data['password'])
+                    profile.save()
+                    profile.user.save()
+                    return HttpResponseRedirect('/')
 
         except ObjectDoesNotExist as e:
             errors.append(e.args)
@@ -188,59 +208,41 @@ def register(request,key=''):
     except ObjectDoesNotExist:
         spinitron = False
 
+    data = {
+        'first_name': profile.user.first_name,
+        'middle_name': profile.middle_name,
+        'last_name': profile.user.last_name,
+        'nick_name': profile.nick_name,
+        'student_id': profile.student_id,
+        'email': profile.user.email,
+        'date_joined': profile.date_joined,
+        'phone': profile.phone,
+        'number_of_semesters': profile.seniority_offset,
+        'spinitron_email' : spinitron.spinitron_email,
+    }
+
+    try:
+        form
+        f = form
+        f.password = ''
+        f.confirm_password = ''
+    except:
+        f = RegisterForm(data)
 
 
     data = {
-        'first_name' : profile.user.first_name,
-        'input_list' : [
-            {'name' :'first_name',
-            'data': profile.user.first_name,
-             'friendly_name' : "First Name",},
-
-            {'name': 'middle_name',
-             'data': profile.middle_name,
-             'friendly_name': "Middle Name",},
-
-            {'name': 'last_name',
-             'data': profile.user.last_name,
-             'friendly_name': "Last Name",},
-
-            {'name': 'nick_name',
-             'data': profile.nick_name,
-             'friendly_name': "Nickname",},
-
-            {'name': 'student_id',
-             'data': profile.student_id,
-             'friendly_name': "Student ID Number",
-             'help':"Community members enter n/a"},
-
-            {'name': 'email',
-             'data': profile.user.email,
-             'friendly_name': "Email Address",
-             'help':"Email address you will use to log in to the DJ Portal."},
-
-            {'name': 'date_joined',
-             'data': profile.date_joined,
-             'friendly_name': "Date Joined",
-             'help': 'The (approximate) date you joined WMFO',},
-
-            {'name': 'phone',
-             'data': profile.phone,
-             'friendly_name': "Phone Number",},
-
-            {'name': 'number_of_semesters',
-             'data': profile.seniority_offset,
-             'friendly_name': "Number of WMFO Seasons",},
+        'first_name': profile.user.first_name,
+        'read_only': [
+            {'name': 'Relationship',
+             'data': profile.get_relationship_display(),},
+            {'name': 'Executive Board',
+             'data': profile.exec,},
+            {'name': 'Access Level',
+             'data': profile.get_access_display(),},
         ],
-        'read_only' : [
-            {'name':'Relationship',
-             'data':profile.get_relationship_display(),},
-            {'name':'Executive Board',
-             'data':profile.exec,},
-            {'name':'Access Level',
-             'data':profile.get_access_display(),},
-        ],
-        'spinitron' : spinitron,
-        'errors' : errors,
+        'errors': errors,
+        'form' : f,
     }
+
     return render(request,'dj_summary/register.html', data)
+

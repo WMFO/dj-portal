@@ -16,21 +16,7 @@
 <p>Hello, {{ first_name }}</p>
 <form method="post" action="">
 {% csrf_token %}
-{% for i in input_list %}
-    <p>
-    {% if i.help %}
-        {{ i.help }}:<br />
-    {% endif %}
-<label for="{{ i.name }}">{{ i.friendly_name }}: </label><input id="{{ i.name }}" name="{{ i.name }}"
-        {% if i.name == "date_joined" %} type="date" value="{{ i.data|date:"Y-m-d" }}"
-        {%  else %}
-                                                value="{{ i.data }}"
-    {% endif %}></p>
-{% endfor %}
-<p><label for="password">Password: </label><input name="password" type="password" id="password"></p>
-<p><label for="confirm_password">Confirm Password: </label><input name="confirm_password" type="password" id="confirm_password"></p>
-<p>Please fill in the email address you use to sign in to Spinitron so we can link your account.</p>
-<p><label for="spinitron_email">Spinitron Email:<input name="spinitron_email" value="{{ spinitron.spinitron_email }}"></label></p>
+{{ form.as_p }}
 <p>These fields must be modified by the Program Director. Please veryify that they look OK:</p>
 {% for r in read_only %}
     <p>{{ r.name }}: {{ r.data }}</p>
