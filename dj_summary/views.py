@@ -192,6 +192,7 @@ def schedule_admin_api(request):
             #timeslots for show for semester
             timeslots = show.timeslot_set.filter(semester=agreement_semester).order_by('priority')
             length = timeslots[0].length
+            alternating = timeslots[0].alternating
 
             #ain't that cute?
             timeslot_integers = [{'slot' : d.slot,
@@ -212,6 +213,7 @@ def schedule_admin_api(request):
                            'rank' : calculate_show_rank(s['show_id'],agreement_semester),
                            'length' : length,
                            'djs' : dj_list,
+                           'alternating' : alternating,
                            'timeslots' : timeslot_integers,
             })
         ordered_shows = sorted(shows,key= lambda x: x['rank'])
