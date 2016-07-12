@@ -194,7 +194,11 @@ def schedule_admin_api(request):
             length = timeslots[0].length
 
             #ain't that cute?
-            timeslot_integers = [{'slot' : d.slot, 'accepted' : d.accepted} for d in timeslots]
+            timeslot_integers = [{'slot' : d.slot,
+                                  'accepted' : d.accepted,
+                                  'text' : d.text}
+
+                                 for d in timeslots] #huzzah
 
             #get DJs
             djs = show.djs.only('first_name','last_name','id')

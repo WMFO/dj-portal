@@ -78,6 +78,10 @@ class Timeslot(models.Model):
         qualifier = '' if self.accepted else '(requested) '
         return qualifier + str(self.WEEKDAY_OPTIONS[self.weekday_int]) + ' ' + str(self.hour) + '-' + str(self.end_hour) + ':00'
 
+    @property
+    def text(self):
+        return str(self.WEEKDAY_OPTIONS[self.weekday_int]) + ' ' + str(self.hour) + '-' + str(self.end_hour) + ':00'
+
     def __str__(self):
         qualifier = '' if self.accepted else '(requested) '
         return qualifier + str(self.WEEKDAY_OPTIONS[self.weekday_int]) + ' ' + str(self.hour) + '-' + str(self.end_hour) + ':00 @ ' + self.semester.name
