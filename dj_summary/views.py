@@ -5,8 +5,9 @@ from django.db.models import F, Sum
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse, HttpResponseForbidden
 from django.shortcuts import render
 import json
+from django.core import serializers
 from dj_summary import utilities
-from .models import Agreement, Timeslot, Profile, SpinitronProfile
+from .models import Agreement, Timeslot, Profile, SpinitronProfile, Show
 
 
 from .forms import RegisterForm
@@ -161,6 +162,59 @@ def schedule_api(request):
                              'user_slots':user_slots_json,
                              })
 
+def calculate_show_rank(show,semester):
+    # TODO: add rank formula
+    # e.g.:
+    # calculate_dj_rank(user_id,semester)
+    # logic for 1 and 2 person shows
+    return 1
+
+
+def calculate_dj_rank(dj,semester):
+    return 1
+
+
+def schedule_admin_api(request):
+    agreement_semester = utilities.agreement_semester()
+    if request.method == 'GET':
+
+        # Obtain all show IDs that have submitted scheduling slots for the current scheduling semester
+        shows_to_be_scheduled = Timeslot.objects.filter(semester=agreement_semester)\
+            .values('show_id').distinct()
+
+        shows = []
+
+        # Obtain show scheduling information
+        for s in shows_to_be_scheduled:
+            show_id = s['show_id']
+            show = Show.objects.get(pk=show_id)
+
+            #timeslots for show for semester
+            timeslots = show.timeslot_set.filter(semester=agreement_semester).order_by('priority')
+            length = timeslots[0].length
+
+            #ain't that cute?
+            timeslot_integers = [{'slot' : d.slot, 'accepted' : d.accepted} for d in timeslots]
+
+            #get DJs
+            djs = show.djs.only('first_name','last_name','id')
+
+            dj_list = [{'first_name' : d.first_name,
+                        'last_name' : d.last_name,
+                        'id' : d.id, } for d in djs]
+
+            shows.append({ 'show_id' : show.id,
+                           'show_name' : show.name,
+                           'rank' : calculate_show_rank(s['show_id'],agreement_semester),
+                           'length' : length,
+                           'djs' : dj_list,
+                           'timeslots' : timeslot_integers,
+            })
+        ordered_shows = sorted(shows,key= lambda x: x['rank'])
+
+        return JsonResponse({'shows': ordered_shows,
+                             })
+
 def register(request,key=''):
     errors = []
     try:
@@ -168,7 +222,7 @@ def register(request,key=''):
     except ObjectDoesNotExist:
         return HttpResponseForbidden("Invalid registration key")
 
-    if (request.method == 'POST'):
+    if request.method == 'POST':
         form = RegisterForm(request.POST)
         try:
             if form.is_valid():

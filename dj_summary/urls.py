@@ -8,4 +8,5 @@ urlpatterns = [
     url(r'^schedule$', views.schedule, name='schedule'),
     url(r'^scheduleapi$', views.schedule_api, name='schedule_api'),
     url(r'^register/(?P<key>.*)$', views.register,name='register'),
+    url(r'^schedule_admin_api$', views.schedule_admin_api, name='schedule_admin_api'),
 ]
