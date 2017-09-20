@@ -5,9 +5,9 @@ from django.db.models import F, Sum
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse, HttpResponseForbidden
 from django.shortcuts import render
 import json
-from django.core import serializers
+from django.contrib.auth.models import User
 from dj_summary import utilities
-from .models import Agreement, Timeslot, Profile, SpinitronProfile, Show
+from .models import Agreement, Timeslot, Profile, SpinitronProfile, Show, Assignment
 
 
 from .forms import RegisterForm
@@ -77,7 +77,7 @@ def agreement(request):
         data = {
             'semester' : agreement_semester.name,
         }
-        if (request.method == "POST"):
+        if request.method == "POST":
             a = Agreement.objects.create(user_id=request.user.id, semester_id=agreement_semester.id)
             a.signature = request.POST['signature']
             a.save()
@@ -86,8 +86,46 @@ def agreement(request):
     else:
         return HttpResponseRedirect(reverse('schedule'))
 
-def choose_show(request):
-    return HttpResponse("Use this page to select a show")
+#def choose_show(request):
+
+
+def show_api(request):
+    if request.method == 'GET':
+        shows = request.user.show_set.all()
+
+        show_list = []
+        for s in shows:
+            djs = [{'name': d.first_name + ' ' + d.last_name,
+                    'id' : d.id} for d in s.djs]
+            show_list.append({'name':s.name,
+                              'id' : s.id,
+                              'djs' : djs} )
+        return JsonResponse(show_list)
+
+    if request.method == 'POST':
+        # assign DJs to
+        # { 'djs' : [id1, id2, id3...], 'show' : { 'id' : show_id, 'name' : n, 'description' : d }
+        d = json.loads(request.body.decode('utf-8'))
+        agreement_semester = utilities.agreement_semester()
+
+        show_id = -1
+
+        if 'id' in d['show'].keys():
+            s = Show.objects.find(id=d['show']['id'])
+            show_id = s.id
+        else:
+            s = Show(name=d['show']['name'],description=d['show']['description'])
+            s.save()
+
+
+        Assignment(semester=agreement_semester.id,djs=request.user.id,show=show_id)
+
+        #todo: secure this so I can only add djs if I've been in the show before
+
+
+        #show = Show.objects.get(id=d['show_id'])
+        for id in d['djs']:
+            Assignment(semester=agreement_semester.id,djs=id,show=show_id).save()
 
 def schedule(request):
     # todo: make this user selectable
@@ -197,7 +235,8 @@ def schedule_admin_api(request):
             #ain't that cute?
             timeslot_integers = [{'slot' : d.slot,
                                   'accepted' : d.accepted,
-                                  'text' : d.text}
+                                  'text' : d.text,
+                                  'id' : d.id}
 
                                  for d in timeslots] #huzzah
 
