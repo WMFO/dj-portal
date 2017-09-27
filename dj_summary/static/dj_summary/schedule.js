@@ -89,7 +89,7 @@ var scheduleApp = angular.module('scheduleApp',[]).controller('ScheduleCtrl',[ '
         //json_data = JSON.stringify(data);
         $http({
             method:'POST',
-            url:'/scheduleapi',
+            url:'/scheduleapi/' + document.getElementsByName('showid')[0].value,
             headers: {
                 'Content-Type' : 'application/json'
             },
@@ -105,7 +105,7 @@ var scheduleApp = angular.module('scheduleApp',[]).controller('ScheduleCtrl',[ '
         $http.defaults.xsrfHeaderName = 'X-CSRFToken';
         $http({
             method:'GET',
-            url: '/scheduleapi'
+            url: '/scheduleapi/' + document.getElementsByName('showid')[0].value
         }).then(function successCallback(response) {
             var r = response.data;
             $scope.scheduled_slots = r.scheduled_slots;

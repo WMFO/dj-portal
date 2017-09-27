@@ -1,9 +1,10 @@
 from datetime import datetime
 
-from django.contrib.auth.models import User
+#from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import F, Sum
 from django.utils.timezone import now
+from django.contrib.auth.models import AbstractUser
 
 
 def current_semester():
@@ -15,8 +16,86 @@ def current_semester():
 class Semester(models.Model):
     name = models.CharField(max_length=100)
     start_date = models.DateField()
+
     def __str__(self):
         return self.name
+
+
+class SpinitronProfile(models.Model):
+    ROLES = (
+        ('N', 'New User'),
+        ('U', 'User'),
+        ('E', 'Editor'),
+        ('A', 'Admin'),
+    )
+    id = models.IntegerField(unique=True, primary_key=True)
+    spinitron_name = models.CharField(max_length=150)
+    dj_name = models.CharField(max_length=150)
+    spinitron_email = models.CharField(max_length=150)
+    role = models.CharField(max_length=1, choices=ROLES)
+
+    def __str__(self):
+        return str(self.id) + " - " + self.spinitron_name
+
+
+class User(AbstractUser):
+    RELATIONSHIPS = (
+        ('S', 'Student'),
+        ('A', 'Alum'),
+        ('C', 'Community'),
+    )
+    ACCESSES = (
+        ('G','General'),
+        ('M','Music Department'),
+        ('E','Engineer'),
+        ('A','All'),
+    )
+    nick_name = models.CharField(max_length=75)
+    key = models.CharField(max_length=50)
+    middle_name = models.CharField(max_length=75)
+    semester_joined = models.ForeignKey(Semester,null=True)
+    seniority_offset = models.IntegerField(default=0)
+    phone = models.CharField(max_length=15)
+    student_id = models.CharField(max_length=15)
+    access = models.CharField(max_length=1,choices=ACCESSES)
+    exec = models.BooleanField(default=False)
+    active = models.BooleanField(default=False)
+    unsubscribe = models.BooleanField(default=False)
+    sub = models.BooleanField(default=False)
+    relationship = models.CharField(max_length=1,choices=RELATIONSHIPS)
+    date_joined = models.DateField(default=now)
+    spinitron = models.OneToOneField(SpinitronProfile,null=True)
+
+    @property
+    def volunteer_hours_regular(self):
+        current_volunteer_entries = self.volunteer_set.filter(semester=current_semester().id)
+        regular = current_volunteer_entries.filter(subbing=False)
+        if regular:
+            return regular.aggregate(Sum(F('number_of_hours')))['number_of_hours__sum']
+        else:
+            return 0
+
+    @property
+    def volunteer_hours_subbing(self):
+        current_volunteer_entries = self.volunteer_set.filter(semester=current_semester().id)
+        subbing = current_volunteer_entries.filter(subbing=True)
+        if subbing:
+            return subbing.aggregate(Sum(F('number_of_hours')))['number_of_hours__sum']
+        else:
+            return 0
+
+    @property
+    def volunteer_hours_total(self):
+        current_volunteer_entries = self.volunteer_set.filter(semester=current_semester().id)
+        if current_volunteer_entries:
+            return current_volunteer_entries.aggregate(Sum(F('number_of_hours')))['number_of_hours__sum']
+        else:
+            return 0
+
+    @property
+    def volunteering_completed(self):
+        return (self.volunteer_hours_total >= 5) and (self.volunteer_hours_regular >= 3)
+
 
 class Show(models.Model):
     name = models.CharField(max_length=200)
@@ -24,13 +103,16 @@ class Show(models.Model):
     description = models.CharField(max_length=200)
     semesters = models.ManyToManyField(Semester,through='Timeslot')
     djs = models.ManyToManyField(User, through='Assignment')
+
     def __str__(self):
         return self.name
+
 
 class Assignment(models.Model):
     show = models.ForeignKey(Show)
     djs = models.ForeignKey(User)
     semester = models.ForeignKey(Semester)
+
     def __str__(self):
         return self.show.name + ' - ' + self.semester.name
 
@@ -86,20 +168,25 @@ class Timeslot(models.Model):
         qualifier = '' if self.accepted else '(requested) '
         return qualifier + str(self.WEEKDAY_OPTIONS[self.weekday_int]) + ' ' + str(self.hour) + '-' + str(self.end_hour) + ':00 @ ' + self.semester.name
 
+
 class Agreement(models.Model):
     signature_date = models.DateTimeField(default=now)
     signature = models.CharField(max_length=100)
     user = models.ForeignKey(User)
     semester = models.ForeignKey(Semester)
+
     def __str__(self):
         return self.signature
+
 
 class Discipline(models.Model):
     subject = models.CharField(max_length=200)
     incident_date = models.DateField()
     description = models.TextField()
+
     def __str__(self):
         return self.subject
+
 
 class Volunteer(models.Model):
     subject = models.CharField(max_length=200)
@@ -108,83 +195,9 @@ class Volunteer(models.Model):
     number_of_hours = models.DecimalField(decimal_places=2,max_digits=4)
     subbing = models.BooleanField(default=False)
     user = models.ForeignKey(User)
+
     def __str__(self):
         return self.subject
-
-class SpinitronProfile(models.Model):
-    ROLES = (
-        ('N','New User'),
-        ('U','User'),
-        ('E','Editor'),
-        ('A','Admin'),
-    )
-    id = models.IntegerField(unique=True,primary_key=True)
-    spinitron_name = models.CharField(max_length=150)
-    dj_name = models.CharField(max_length=150)
-    spinitron_email = models.CharField(max_length=150)
-    role = models.CharField(max_length=1,choices=ROLES)
-    def __str__(self):
-        return str(self.id) + " - " + self.spinitron_name
-
-class Profile(models.Model):
-    RELATIONSHIPS = (
-        ('S', 'Student'),
-        ('A', 'Alum'),
-        ('C', 'Community'),
-    )
-    ACCESSES = (
-        ('G','General'),
-        ('M','Music Department'),
-        ('E','Engineer'),
-        ('A','All'),
-    )
-    nick_name = models.CharField(max_length=75)
-    key = models.CharField(max_length=50)
-    middle_name = models.CharField(max_length=75)
-    semester_joined = models.ForeignKey(Semester,null=True)
-    seniority_offset = models.IntegerField()
-    phone = models.CharField(max_length=15)
-    student_id = models.CharField(max_length=15)
-    access = models.CharField(max_length=1,choices=ACCESSES)
-    exec = models.BooleanField(default=False)
-    active = models.BooleanField(default=False)
-    unsubscribe = models.BooleanField(default=False)
-    sub = models.BooleanField(default=False)
-    user = models.OneToOneField(User)
-    relationship = models.CharField(max_length=1,choices=RELATIONSHIPS)
-    date_joined = models.DateField(default=now)
-    spinitron = models.OneToOneField(SpinitronProfile,null=True)
-
-    @property
-    def volunteer_hours_regular(self):
-        current_volunteer_entries = self.user.volunteer_set.filter(semester=current_semester().id)
-        regular = current_volunteer_entries.filter(subbing=False)
-        if regular:
-            return regular.aggregate(Sum(F('number_of_hours')))['number_of_hours__sum']
-        else:
-            return 0
-
-    @property
-    def volunteer_hours_subbing(self):
-        current_volunteer_entries = self.user.volunteer_set.filter(semester=current_semester().id)
-        subbing = current_volunteer_entries.filter(subbing=True)
-        if subbing:
-            return subbing.aggregate(Sum(F('number_of_hours')))['number_of_hours__sum']
-        else:
-            return 0
-
-    @property
-    def volunteer_hours_total(self):
-        current_volunteer_entries = self.user.volunteer_set.filter(semester=current_semester().id)
-        if current_volunteer_entries:
-            return current_volunteer_entries.aggregate(Sum(F('number_of_hours')))['number_of_hours__sum']
-        else:
-            return 0
-
-    @property
-    def volunteering_completed(self):
-        return (self.volunteer_hours_total >= 5) and (self.volunteer_hours_regular >= 3)
-
 
 
 

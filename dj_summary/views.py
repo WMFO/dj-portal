@@ -5,18 +5,18 @@ from django.db.models import F, Sum
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse, HttpResponseForbidden
 from django.shortcuts import render
 import json
-from django.contrib.auth.models import User
 from dj_summary import utilities
-from .models import Agreement, Timeslot, Profile, SpinitronProfile, Show, Assignment
+from .models import Agreement, Timeslot, SpinitronProfile, Show, Assignment, User
 
-
-from .forms import RegisterForm
+from django.contrib.auth import login as auth_login
+from dj_summary.utilities import EmailBackend
+from .forms import RegisterForm, LoginForm, CreateShowForm
 
 
 @login_required
 def index(request):
     #Volunteer.objects.filter(pk=request.user.id)
-    profile = request.user.profile
+    user = request.user
     current_semester = utilities.current_semester()
     agreement_semester = utilities.agreement_semester()
 
@@ -25,14 +25,11 @@ def index(request):
 
     # get total volunteering this semester
     volunteering_this_semester = {
-        'total' : profile.volunteer_hours_total,
-        'subbing' : profile.volunteer_hours_subbing,
-        'regular' : profile.volunteer_hours_regular,
+        'total' : user.volunteer_hours_total,
+        'subbing' : user.volunteer_hours_subbing,
+        'regular' : user.volunteer_hours_regular,
     }
     volunteering_total = request.user.volunteer_set.aggregate(Sum(F('number_of_hours')))
-
-    user = request.user
-    profile = request.user.profile
 
     shows_query = request.user.show_set.filter(timeslot__semester=current_semester.id)
     shows = []
@@ -55,13 +52,12 @@ def index(request):
         'volunteer_entries' : volunteer_entries,
         'volunteering_this_semester' : volunteering_this_semester,
         'total_volunteering' : volunteering_total["number_of_hours__sum"],
-        'profile' : profile,
-        'user' : request.user,
+        'user' : user,
         'current_semester' : current_semester,
         'shows': shows,
         'checklist': {
             'agreement':agreement,
-            'volunteering':profile.volunteering_completed,
+            'volunteering':user.volunteering_completed,
             'schedule_requested':schedule_requested,
             'scheduled':scheduled,
         },
@@ -86,7 +82,18 @@ def agreement(request):
     else:
         return HttpResponseRedirect(reverse('schedule'))
 
-#def choose_show(request):
+def choose_show(request):
+    if request.method == 'POST':
+        showid = request.POST['show-select']
+        url = reverse('schedule', kwargs={'showid' : showid})
+        return HttpResponseRedirect(url)
+
+    shows = Show.objects.filter(assignment__djs=request.user).values()
+
+    data = {
+        'shows' : shows,
+    }
+    return render(request, 'dj_summary/choose_show.html', data)
 
 
 def show_api(request):
@@ -127,10 +134,12 @@ def show_api(request):
         for id in d['djs']:
             Assignment(semester=agreement_semester.id,djs=id,show=show_id).save()
 
-def schedule(request):
-    # todo: make this user selectable
-    show = request.user.show_set.all()[0]
 
+def schedule(request,showid):
+    # todo: make this user selectable
+    show = Show.objects.get(id=showid)
+    if not show.assignment_set.filter(djs=request.user).exists():
+        return HttpResponse("Permission Denied")
     agreement_semester = utilities.agreement_semester()
     current_agreement = request.user.agreement_set.filter(user__agreement__semester_id=agreement_semester.id)
     if not current_agreement:
@@ -153,11 +162,39 @@ def schedule(request):
     return render(request, 'dj_summary/schedule.html', data)
 
 
-def schedule_api(request):
+def add_djs(request,showid):
+    show = Show.objects.get(id=showid)
+    if not show.assignment_set.filter(djs=request.user).exists():
+        return HttpResponse("Permission Denied")
+    if request.POST:
+        return HttpResponse(request.POST.getlist("djs[]"))
+    agreement_semester = utilities.agreement_semester()
+    user_id = request.user.id
+    show_user_ids = User.objects.filter(show=show).values_list('id',flat=True)
+    users = User.objects.values('id','first_name','last_name')
+    #
+    #filter out current user from entry
+    users_filtered = [x for x in users if x['id'] != user_id]
+    show_user_ids_filtered = [x for x in show_user_ids if x != user_id]
+    data = {
+        'users' : users_filtered,
+        'current_user_ids' : show_user_ids_filtered,
+        'show' : show,
+    }
+    #return HttpResponse(data)
+    return render(request,'dj_summary/add_djs.html',data)
+
+
+
+
+def schedule_api(request, showid):
     agreement_semester = utilities.agreement_semester()
     #todo: define permission for show scheduling (was assigned last semester show was scheduled)
     #todo: allow user to specify show
-    show = request.user.show_set.all()[0]
+    show = Show.objects.get(id=showid)
+    if not show.assignment_set.filter(djs=request.user).exists():
+        return HttpResponse("Permission Denied")
+
     if request.method == "POST":
         show.timeslot_set.filter(semester=agreement_semester,accepted=False).delete()
         #return HttpResponse(request.body)
@@ -260,10 +297,11 @@ def schedule_admin_api(request):
         return JsonResponse({'shows': ordered_shows,
                              })
 
+
 def register(request,key=''):
     errors = []
     try:
-        profile = Profile.objects.get(key=key)
+        user = User.objects.get(key=key)
     except ObjectDoesNotExist:
         return HttpResponseForbidden("Invalid registration key")
 
@@ -282,20 +320,20 @@ def register(request,key=''):
                 if not spinitron:
                     errors.append("Spinitron email does not match any known accounts")
 
-                profile.user.first_name = data['first_name']
-                profile.middle_name = data['middle_name']
-                profile.user.last_name = data['last_name']
-                profile.nick_name = data['nick_name']
-                profile.student_id = data['student_id']
-                profile.user.username = data['email']
-                profile.user.email = data['email']
-                profile.date_joined = data['date_joined']
-                profile.phone = data['phone']
-                profile.seniority_offset = data['number_of_semesters']
+                user.first_name = data['first_name']
+                user.middle_name = data['middle_name']
+                user.last_name = data['last_name']
+                user.nick_name = data['nick_name']
+                user.student_id = data['student_id']
+                user.user.username = data['email']
+                user.user.email = data['email']
+                user.date_joined = data['date_joined']
+                user.phone = data['phone']
+                user.seniority_offset = data['number_of_semesters']
                 if not errors:
-                    profile.user.set_password(data['password'])
-                    profile.save()
-                    profile.user.save()
+                    user.set_password(data['password'])
+                    user.save()
+                    user.user.save()
                     return HttpResponseRedirect('/')
 
         except ObjectDoesNotExist as e:
@@ -303,20 +341,20 @@ def register(request,key=''):
         #return HttpResponse("Nothing")
 
     try:
-        spinitron = SpinitronProfile.objects.get(spinitron_email=profile.user.email)
+        spinitron = SpinitronProfile.objects.get(spinitron_email=user.email)
     except ObjectDoesNotExist:
         spinitron = False
 
     data = {
-        'first_name': profile.user.first_name,
-        'middle_name': profile.middle_name,
-        'last_name': profile.user.last_name,
-        'nick_name': profile.nick_name,
-        'student_id': profile.student_id,
-        'email': profile.user.email,
-        'date_joined': profile.date_joined,
-        'phone': profile.phone,
-        'number_of_semesters': profile.seniority_offset,
+        'first_name': user.first_name,
+        'middle_name': user.middle_name,
+        'last_name': user.last_name,
+        'nick_name': user.nick_name,
+        'student_id': user.student_id,
+        'email': user.user.email,
+        'date_joined': user.date_joined,
+        'phone': user.phone,
+        'number_of_semesters': user.seniority_offset,
         'spinitron_email' : spinitron.spinitron_email,
     }
 
@@ -330,14 +368,14 @@ def register(request,key=''):
 
 
     data = {
-        'first_name': profile.user.first_name,
+        'first_name': user.first_name,
         'read_only': [
             {'name': 'Relationship',
-             'data': profile.get_relationship_display(),},
+             'data': user.get_relationship_display(),},
             {'name': 'Executive Board',
-             'data': profile.exec,},
+             'data': user.exec,},
             {'name': 'Access Level',
-             'data': profile.get_access_display(),},
+             'data': user.get_access_display(),},
         ],
         'errors': errors,
         'form' : f,
@@ -345,3 +383,41 @@ def register(request,key=''):
 
     return render(request,'dj_summary/register.html', data)
 
+
+def login(request):
+    errors = []
+    if not hasattr(request.GET,'next'):
+        next = '/'
+    else:
+        next = request.GET['next']
+
+    if request.user.is_authenticated():
+        return HttpResponseRedirect(next)
+
+    if request.method == 'POST':
+        f = LoginForm(request.POST)
+        if f.is_valid():
+            data = f.cleaned_data
+            e = EmailBackend()
+            user = e.authenticate(data['email_address'],data['password'])
+            if user is not None:
+                if not user.is_active:
+                    errors.append("Your account is disabled. Email ops@wmfo.org")
+            else:
+                errors.append("Authentication error")
+
+            if not errors:
+                auth_login(request, user)
+                return HttpResponseRedirect(next)
+
+    try:
+        f
+        f.password = ''
+    except:
+        f = LoginForm()
+
+    data = {
+        'errors': errors,
+        'form' :f,
+    }
+    return render(request, 'dj_summary/login.html', data)

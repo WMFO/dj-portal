@@ -1,7 +1,9 @@
 from django import forms
 
+
 class CustomDateInput(forms.widgets.TextInput):
     input_type = 'date'
+
 
 class RegisterForm(forms.Form):
     first_name = forms.CharField()
@@ -17,3 +19,10 @@ class RegisterForm(forms.Form):
     password = forms.CharField(widget=forms.PasswordInput)
     confirm_password = forms.CharField(widget=forms.PasswordInput)
 
+class CreateShowForm(forms.Form):
+    show_name = forms.CharField()
+    choose_show = forms.MultipleChoiceField()
+
+class LoginForm(forms.Form):
+    email_address = forms.CharField()
+    password = forms.CharField(widget=forms.PasswordInput)

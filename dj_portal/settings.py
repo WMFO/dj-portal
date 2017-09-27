@@ -53,6 +53,12 @@ MIDDLEWARE_CLASSES = [
 
 ROOT_URLCONF = 'dj_portal.urls'
 
+AUTHENTICATION_BACKENDS = ['dj_summary.utilities.EmailBackend']
+
+AUTH_USER_MODEL = 'dj_summary.User'
+
+LOGIN_URL = '/login'
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',

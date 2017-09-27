@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add DJs</title>
+    {% load staticfiles %}
+    <script src="{% static "dj_summary/jquery-3.2.1.js" %}"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.4/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.4/js/select2.min.js"></script>
+
+<body>
+<h1>Add DJs to {{ show.name }}</h1>
+<form method="post" target="">
+{% csrf_token %}
+<select class="js-example-basic-multiple" name="djs[]" multiple="multiple">
+    {% for user in users %}
+    <option value="{{ user.id }}" selected="{% if user.id in current_user_ids %}selected{% endif %}">{{ user.first_name }} {{ user.last_name }}</option>
+    {% endfor %}
+</select>
+<script src="{% static "dj_summary/show.js" %}" type="text/javascript"></script>
+<input type="submit" name="add" value="Add Selected DJs and Schedule Show">
+<input type="submit" name="continue" value="Schedule Show">
+</form>
+</body>
+</html>

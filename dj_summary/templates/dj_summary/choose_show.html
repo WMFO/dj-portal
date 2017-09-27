@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Choose Show</title>
+</head>
+<body>
+    <h1>Create Show</h1>
+    <h2></h2>
+<form method="post" action="">
+{% csrf_token %}
+{% if shows %}
+    {%  for show in shows %}
+        <br>
+        <input type="radio" name="show-select" value="{{ show.id }}" id="show-{{ show.id }}"><label for="show-{{ show.id }}"><b>{{ show.name }}</b> first scheduled {{ show.first_year }}</label>
+    {% endfor %}
+    <br>
+        <input type="radio" name="show-select" value="new" id="new"><label for="new">Create New Show</label>
+{% endif %}
+<br>
+    <label for="new-show-name">New Show Name: </label><input name="showname" id="new-show-name">
+<br>
+    <input type="submit" value="Schedule Show">
+</form>
+</body>
+</html>
